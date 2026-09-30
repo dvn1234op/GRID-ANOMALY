@@ -26,3 +26,5 @@ __pycache__/
 
 docker/*.tar.gz
 docker/*.tgz
+docker/*.tgz
+docker/*.tar.gz
