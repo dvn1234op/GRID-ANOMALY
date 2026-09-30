@@ -115,6 +115,6 @@ with tab3:
     with col2:
         st.subheader("Example Anomalies Identified")
         if os.path.exists('results/detector_A_example.png'):
-            st.image('results/detector_A_example.png', caption="Detector A Output", use_column_width=True)
+            st.image('results/detector_A_example.png', caption="Detector A Output", use_container_width=True)
         else:
             st.warning("Detector plot not found.")
