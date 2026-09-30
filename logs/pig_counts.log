@@ -1,0 +1,8 @@
+=== Phase 2 ETL Counts ===
+Cleaned records in /clean:
+11983367
+Rejected records (NULL or Empty energy):
+400
+Rejected records (Negative energy):
+0
+Done.

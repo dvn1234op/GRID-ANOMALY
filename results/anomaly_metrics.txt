@@ -1,0 +1,2 @@
+Detector A - Prec: 0.004, Rec: 0.098, F1: 0.008
+Detector B - Prec: 0.038, Rec: 0.083, F1: 0.052

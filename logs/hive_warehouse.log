@@ -1,0 +1,69 @@
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/opt/hive/lib/log4j-slf4j-impl-2.6.2.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/opt/hadoop-2.7.4/share/hadoop/common/lib/slf4j-log4j12-1.7.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 2.3.2)
+Driver: Hive JDBC (version 2.3.2)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+Beeline version 2.3.2 by Apache Hive
+0: jdbc:hive2://localhost:10000> CREATE DATABASE IF NOT EXISTS smartmeter;
+No rows affected (0.146 seconds)
+0: jdbc:hive2://localhost:10000> USE smartmeter;
+No rows affected (0.077 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS readings_raw;
+No rows affected (0.064 seconds)
+0: jdbc:hive2://localhost:10000> CREATE EXTERNAL TABLE readings_raw (
+. . . . . . . . . . . . . . . .>     lclid STRING,
+. . . . . . . . . . . . . . . .>     tstp STRING,
+. . . . . . . . . . . . . . . .>     energy FLOAT,
+. . . . . . . . . . . . . . . .>     tariff STRING,
+. . . . . . . . . . . . . . . .>     acorn_group STRING,
+. . . . . . . . . . . . . . . .>     temperature FLOAT,
+. . . . . . . . . . . . . . . .>     is_holiday INT
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> ROW FORMAT DELIMITED
+. . . . . . . . . . . . . . . .> FIELDS TERMINATED BY ','
+. . . . . . . . . . . . . . . .> STORED AS TEXTFILE
+. . . . . . . . . . . . . . . .> LOCATION '/clean';
+No rows affected (0.086 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS readings_orc;
+No rows affected (0.051 seconds)
+0: jdbc:hive2://localhost:10000> CREATE TABLE readings_orc (
+. . . . . . . . . . . . . . . .>     lclid STRING,
+. . . . . . . . . . . . . . . .>     tstp TIMESTAMP,
+. . . . . . . . . . . . . . . .>     energy FLOAT,
+. . . . . . . . . . . . . . . .>     tariff STRING,
+. . . . . . . . . . . . . . . .>     acorn_group STRING,
+. . . . . . . . . . . . . . . .>     temperature FLOAT,
+. . . . . . . . . . . . . . . .>     is_holiday INT
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> PARTITIONED BY (month STRING)
+. . . . . . . . . . . . . . . .> STORED AS ORC;
+No rows affected (0.084 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SET hive.exec.dynamic.partition = true;
+No rows affected (0.005 seconds)
+0: jdbc:hive2://localhost:10000> SET hive.exec.dynamic.partition.mode = nonstric t;
+No rows affected (0.004 seconds)
+0: jdbc:hive2://localhost:10000> -- Suppress Tez/MR execution errors for small f iles if any
+0: jdbc:hive2://localhost:10000> SET hive.mapred.mode = nonstrict;
+No rows affected (0.003 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> INSERT OVERWRITE TABLE readings_orc PARTITION ( month)
+. . . . . . . . . . . . . . . .> SELECT 
+. . . . . . . . . . . . . . . .>     lclid,
+. . . . . . . . . . . . . . . .>     CAST(SUBSTR(tstp, 1, 19) AS TIMESTAMP) as t stp,
+. . . . . . . . . . . . . . . .>     energy,
+. . . . . . . . . . . . . . . .>     tariff,
+. . . . . . . . . . . . . . . .>     acorn_group,
+. . . . . . . . . . . . . . . .>     temperature,
+. . . . . . . . . . . . . . . .>     is_holiday,
+. . . . . . . . . . . . . . . .>     SUBSTR(tstp, 1, 7) as month
+. . . . . . . . . . . . . . . .> FROM readings_raw;
+WARNING: Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+No rows affected (47.067 seconds)
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000

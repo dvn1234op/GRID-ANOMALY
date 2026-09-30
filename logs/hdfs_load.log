@@ -1,0 +1,28 @@
+Starting HDFS load in --subset mode...
+Counting rows in data/subset_halfhourly_dataset...
+Total rows in halfhourly blocks: 11983876
+    827 data/acorn_details.csv
+   5567 data/informations_households.csv
+     26 data/uk_bank_holidays.csv
+    883 data/weather_daily_darksky.csv
+  21166 data/weather_hourly_darksky.csv
+  28469 total
+Loading blocks to HDFS /raw/halfhourly...
+Time to load blocks: 30 seconds
+Loading metadata to HDFS /raw/metadata...
+Time to load metadata: 2 seconds
+HDFS Load Complete.
+Starting HDFS load in --full mode...
+Counting rows in data/halfhourly_dataset...
+Total rows in halfhourly blocks: 167817133
+    827 data/acorn_details.csv
+   5567 data/informations_households.csv
+     26 data/uk_bank_holidays.csv
+    883 data/weather_daily_darksky.csv
+  21166 data/weather_hourly_darksky.csv
+  28469 total
+Loading blocks to HDFS /raw/halfhourly...
+Time to load blocks: 31 seconds
+Loading metadata to HDFS /raw/metadata...
+Time to load metadata: 2 seconds
+HDFS Load Complete.

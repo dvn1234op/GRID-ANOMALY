@@ -1,0 +1,49 @@
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/opt/hive/lib/log4j-slf4j-impl-2.6.2.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/opt/hadoop-2.7.4/share/hadoop/common/lib/slf4j-log4j12-1.7.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 2.3.2)
+Driver: Hive JDBC (version 2.3.2)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+Beeline version 2.3.2 by Apache Hive
+0: jdbc:hive2://localhost:10000> USE smartmeter;
+No rows affected (0.071 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS features;
+No rows affected (0.056 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> CREATE TABLE features STORED AS ORC AS
+. . . . . . . . . . . . . . . .> SELECT
+. . . . . . . . . . . . . . . .>     lclid,
+. . . . . . . . . . . . . . . .>     tstp,
+. . . . . . . . . . . . . . . .>     energy,
+. . . . . . . . . . . . . . . .>     tariff,
+. . . . . . . . . . . . . . . .>     acorn_group,
+. . . . . . . . . . . . . . . .>     temperature,
+. . . . . . . . . . . . . . . .>     is_holiday,
+. . . . . . . . . . . . . . . .>     month,
+. . . . . . . . . . . . . . . .>     -- Time features
+. . . . . . . . . . . . . . . .>     HOUR(tstp) as hour_of_day,
+. . . . . . . . . . . . . . . .>     CASE WHEN DATE_FORMAT(tstp, 'u') IN (6, 7)  THEN 1 ELSE 0 END as is_weekend,
+. . . . . . . . . . . . . . . .>     DATE_FORMAT(tstp, 'u') as day_of_week,
+. . . . . . . . . . . . . . . .>     -- Lags
+. . . . . . . . . . . . . . . .>     LAG(energy, 1) OVER (PARTITION BY lclid ORD ER BY tstp) as lag_1,
+. . . . . . . . . . . . . . . .>     LAG(energy, 48) OVER (PARTITION BY lclid OR DER BY tstp) as lag_48,
+. . . . . . . . . . . . . . . .>     LAG(energy, 336) OVER (PARTITION BY lclid O RDER BY tstp) as lag_336,
+. . . . . . . . . . . . . . . .>     -- Rolling aggregates (48 steps = 24 hours) 
+. . . . . . . . . . . . . . . .>     AVG(energy) OVER (
+. . . . . . . . . . . . . . . .>         PARTITION BY lclid 
+. . . . . . . . . . . . . . . .>         ORDER BY tstp 
+. . . . . . . . . . . . . . . .>         ROWS BETWEEN 48 PRECEDING AND 1 PRECEDI NG
+. . . . . . . . . . . . . . . .>     ) as rolling_mean_48,
+. . . . . . . . . . . . . . . .>     STDDEV(energy) OVER (
+. . . . . . . . . . . . . . . .>         PARTITION BY lclid 
+. . . . . . . . . . . . . . . .>         ORDER BY tstp 
+. . . . . . . . . . . . . . . .>         ROWS BETWEEN 48 PRECEDING AND 1 PRECEDI NG
+. . . . . . . . . . . . . . . .>     ) as rolling_std_48
+. . . . . . . . . . . . . . . .> FROM readings_orc;
+WARNING: Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+No rows affected (78.566 seconds)
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000

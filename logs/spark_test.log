@@ -1,0 +1,20 @@
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/09/30 16:37:47 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/09/30 16:37:48 WARN Utils: Service 'SparkUI' could not bind on port 4040. Attempting port 4041.
+Spark context Web UI available at http://84bab6d0026f:4041
+Spark context available as 'sc' (master = local[*], app id = local-1790786268166).
+Spark session available as 'spark'.
+26/09/30 16:37:50 WARN SparkSession: Using an existing Spark session; only runtime SQL configurations will take effect.
+=== Spark Hive Integration Test ===
++---------+------+------+-------------------+
+|    lclid|energy|lag_48|    rolling_mean_48|
++---------+------+------+-------------------+
+|MAC000020| 0.275|  NULL|               NULL|
+|MAC000020| 0.231|  NULL| 0.2750000059604645|
+|MAC000020| 0.204|  NULL|0.25300000607967377|
+|MAC000020| 0.194|  NULL|0.23666666944821677|
+|MAC000020| 0.317|  NULL|0.22600000351667404|
++---------+------+------+-------------------+
+
+=== Success ===
