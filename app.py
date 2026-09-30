@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-import glob
+import re
 
 st.set_page_config(page_title="Grid Anomaly & Load Forecasting", page_icon="⚡", layout="wide")
 
@@ -18,12 +18,34 @@ def load_data():
     data = {}
     try:
         data['overall'] = pd.read_csv('results/forecast_metrics_overall.csv')
-        data['hourly'] = pd.read_csv('results/forecast_metrics_by_hour.csv')
-        data['acorn'] = pd.read_csv('results/forecast_metrics_by_acorn.csv')
-        data['tariff'] = pd.read_csv('results/forecast_metrics_by_tariff.csv')
-        data['reporting'] = pd.read_csv('results/reporting_output.csv')
+        data['hourly'] = pd.read_csv('results/forecast_metrics_by_hour.csv', names=['hour', 'model_rmse', 'model_mae', 'model_smape'])
+        data['acorn'] = pd.read_csv('results/forecast_metrics_by_acorn.csv', names=['acorn', 'model_rmse', 'model_mae', 'model_smape'])
+        data['tariff'] = pd.read_csv('results/forecast_metrics_by_tariff.csv', names=['tariff', 'model_rmse', 'model_mae', 'model_smape'])
+        
+        # Parse the Hive reporting output which is a beeline CLI text dump
+        with open('results/reporting_output.csv', 'r') as f:
+            content = f.read()
+            
+            # Extract ACORN group section
+            acorn_match = re.search(r'acorn_group,avg_consumption,total_consumption\n((?:.*\n)+?)(?=0: jdbc|$)', content)
+            if acorn_match:
+                from io import StringIO
+                data['report_acorn'] = pd.read_csv(StringIO("acorn_group,avg_consumption,total_consumption\n" + acorn_match.group(1).strip()))
+                
+            # Extract Peak-hour section
+            hour_match = re.search(r'hour_of_day,avg_energy\n((?:.*\n)+?)(?=0: jdbc|$)', content)
+            if hour_match:
+                from io import StringIO
+                data['report_hourly'] = pd.read_csv(StringIO("hour_of_day,avg_energy\n" + hour_match.group(1).strip()))
+                
+            # Extract Std vs ToU section
+            tariff_match = re.search(r'tariff,hour_of_day,avg_energy\n((?:.*\n)+?)(?=0: jdbc|$)', content)
+            if tariff_match:
+                from io import StringIO
+                data['report_tariff'] = pd.read_csv(StringIO("tariff,hour_of_day,avg_energy\n" + tariff_match.group(1).strip()))
+
     except Exception as e:
-        st.warning(f"Could not load some CSVs. Have you run the pipeline? Error: {e}")
+        st.warning(f"Could not load some files. Error: {e}")
     return data
 
 data = load_data()
@@ -42,19 +64,40 @@ with tab1:
             st.subheader("RMSE by Hour of Day")
             hourly = data['hourly'].sort_values('hour')
             st.line_chart(hourly.set_index('hour')['model_rmse'])
+            
+            st.subheader("MAE by Hour of Day")
+            st.line_chart(hourly.set_index('hour')['model_mae'])
     
     with col2:
         if 'tariff' in data:
-            st.subheader("Performance by Tariff (Standard vs ToU)")
+            st.subheader("RMSE by Tariff (Standard vs ToU)")
             st.bar_chart(data['tariff'].set_index('tariff')['model_rmse'])
+            
+        if 'acorn' in data:
+            st.subheader("RMSE by ACORN Demographic Group")
+            acorn_df = data['acorn'].sort_values('model_rmse')
+            st.bar_chart(acorn_df.set_index('acorn')['model_rmse'])
 
 with tab2:
-    st.header("Consumer Group Insights (Acorn)")
-    if 'reporting' in data:
-        st.dataframe(data['reporting'], use_container_width=True)
-        # Assuming there's a column for acorn group and avg consumption or similar
-        # Will display raw data for now as exact schema of reporting_output.csv isn't known
-        st.info("Hive Aggregations output displayed above.")
+    st.header("Consumer Group Insights (Hive Aggregations)")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if 'report_acorn' in data:
+            st.subheader("Avg Consumption by ACORN Group")
+            st.bar_chart(data['report_acorn'].set_index('acorn_group')['avg_consumption'])
+            st.dataframe(data['report_acorn'], use_container_width=True)
+            
+    with col2:
+        if 'report_hourly' in data:
+            st.subheader("Global Peak-Hour Profile")
+            st.line_chart(data['report_hourly'].set_index('hour_of_day')['avg_energy'])
+            
+    if 'report_tariff' in data:
+        st.subheader("Standard vs Time-of-Use (ToU) Tariff Profiles")
+        # Pivot the data for a multi-line chart
+        tariff_pivot = data['report_tariff'].pivot(index='hour_of_day', columns='tariff', values='avg_energy')
+        st.line_chart(tariff_pivot)
 
 with tab3:
     st.header("Anomaly Detection (Residual & K-Means)")
