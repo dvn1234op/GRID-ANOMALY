@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Grid Anomaly Dashboard</title>
-    <!-- Use the latest version of stlite -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable/build/stlite.css" />
   </head>
   <body>
@@ -35,13 +34,12 @@ repo_url = "https://raw.githubusercontent.com/dvn1234op/GRID-ANOMALY/main"
 def load_data():
     data = {}
     try:
-        data['overall'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_overall.csv")
-        data['hourly'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_by_hour.csv", names=['hour', 'model_rmse', 'model_mae', 'model_smape'])
-        data['acorn'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_by_acorn.csv", names=['acorn', 'model_rmse', 'model_mae', 'model_smape'])
-        data['tariff'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_by_tariff.csv", names=['tariff', 'model_rmse', 'model_mae', 'model_smape'])
+        data['overall'] = pd.read_csv(repo_url + "/results/forecast_metrics_overall.csv")
+        data['hourly'] = pd.read_csv(repo_url + "/results/forecast_metrics_by_hour.csv", names=['hour', 'model_rmse', 'model_mae', 'model_smape'])
+        data['acorn'] = pd.read_csv(repo_url + "/results/forecast_metrics_by_acorn.csv", names=['acorn', 'model_rmse', 'model_mae', 'model_smape'])
+        data['tariff'] = pd.read_csv(repo_url + "/results/forecast_metrics_by_tariff.csv", names=['tariff', 'model_rmse', 'model_mae', 'model_smape'])
         
-        # Fetch reporting output
-        req = urllib.request.urlopen(f"{repo_url}/results/reporting_output.csv")
+        req = urllib.request.urlopen(repo_url + "/results/reporting_output.csv")
         content = req.read().decode('utf-8')
         
         acorn_match = re.search(r'acorn_group,avg_consumption,total_consumption\\n((?:.*\\n)+?)(?=0: jdbc|$)', content)
@@ -60,7 +58,7 @@ def load_data():
             data['report_tariff'] = pd.read_csv(StringIO("tariff,hour_of_day,avg_energy\\n" + tariff_match.group(1).strip()))
 
     except Exception as e:
-        st.warning(f"Could not load some files. Error: {e}")
+        st.warning("Could not load some files. Error: " + str(e))
     return data
 
 data = load_data()
@@ -101,14 +99,14 @@ with tab3:
     with col1:
         st.subheader("Detector Metrics")
         try:
-            req = urllib.request.urlopen(f"{repo_url}/results/anomaly_metrics.txt")
+            req = urllib.request.urlopen(repo_url + "/results/anomaly_metrics.txt")
             metrics = req.read().decode('utf-8')
             st.code(metrics, language="text")
         except:
             st.warning("Anomaly metrics not found.")
     with col2:
         st.subheader("Example Anomalies")
-        st.image(f"{repo_url}/results/detector_A_example.png", caption="Detector A Output", use_container_width=True)
+        st.image(repo_url + "/results/detector_A_example.png", caption="Detector A Output", use_container_width=True)
 `
           }
         },
