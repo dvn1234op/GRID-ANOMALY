@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Grid Anomaly & Load Forecasting Dashboard</title>
+    <!-- Stlite CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.1/build/stlite.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Stlite JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.1/build/stlite.js"></script>
+    <script>
+      stlite.mount(
+        {
+          requirements: ["pandas", "matplotlib"],
+          entrypoint: "app.py",
+          files: {
+            "app.py": { url: "app.py" },
+            "results/forecast_metrics_overall.csv": { url: "results/forecast_metrics_overall.csv" },
+            "results/forecast_metrics_by_hour.csv": { url: "results/forecast_metrics_by_hour.csv" },
+            "results/forecast_metrics_by_acorn.csv": { url: "results/forecast_metrics_by_acorn.csv" },
+            "results/forecast_metrics_by_tariff.csv": { url: "results/forecast_metrics_by_tariff.csv" },
+            "results/reporting_output.csv": { url: "results/reporting_output.csv" },
+            "results/anomaly_metrics.txt": { url: "results/anomaly_metrics.txt" },
+            "results/detector_A_example.png": { url: "results/detector_A_example.png" }
+          },
+        },
+        document.getElementById("root")
+      );
+    </script>
+  </body>
+</html>
