@@ -1,3 +1,28 @@
+# Data and Datasets
 data/
-*.zip
+Dataset.zip
 *.csv
+
+# Exceptions for results (we want the reports/plots, but not raw prediction CSVs)
+!results/Grid_Anomaly_Project_Comprehensive_Report.docx
+!results/Grid_Anomaly_Presentation.pptx
+!results/detector_A_example.png
+!results/anomaly_metrics.txt
+!results/feature_importances.txt
+!results/reporting_output.csv
+!results/forecast_metrics_overall.csv
+results/*_predictions/
+results/*_by_acorn/
+results/*_by_hour/
+results/*_by_tariff/
+
+# Logs
+logs/
+
+# Python Virtual Environments
+venv/
+__pycache__/
+*.pyc
+
+docker/*.tar.gz
+docker/*.tgz
