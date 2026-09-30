@@ -5,29 +5,112 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Grid Anomaly Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.1/build/stlite.css" />
+    <!-- Use the latest version of stlite -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable/build/stlite.css" />
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.1/build/stlite.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable/build/stlite.js"></script>
     <script>
-      const repoUrl = "https://raw.githubusercontent.com/dvn1234op/GRID-ANOMALY/main";
-      
       stlite.mount(
         {
           requirements: ["pandas", "matplotlib"],
           entrypoint: "app.py",
           files: {
-            "app.py": { url: repoUrl + "/app.py" },
-            "results/forecast_metrics_overall.csv": { url: repoUrl + "/results/forecast_metrics_overall.csv" },
-            "results/forecast_metrics_by_hour.csv": { url: repoUrl + "/results/forecast_metrics_by_hour.csv" },
-            "results/forecast_metrics_by_acorn.csv": { url: repoUrl + "/results/forecast_metrics_by_acorn.csv" },
-            "results/forecast_metrics_by_tariff.csv": { url: repoUrl + "/results/forecast_metrics_by_tariff.csv" },
-            "results/reporting_output.csv": { url: repoUrl + "/results/reporting_output.csv" },
-            "results/anomaly_metrics.txt": { url: repoUrl + "/results/anomaly_metrics.txt" },
-            // Pass the image URL so app.py can display it from the web instead of local file system
-            "results/detector_A_example.png": { url: repoUrl + "/results/detector_A_example.png" }
-          },
+            "app.py": `
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import urllib.request
+import re
+
+st.set_page_config(page_title="Grid Anomaly & Load Forecasting", page_icon="⚡", layout="wide")
+
+st.title("⚡ Grid Anomaly & Load Forecasting Dashboard")
+st.markdown("Welcome to the interactive dashboard for the **CSE412 Big Data Applied Project**.")
+
+repo_url = "https://raw.githubusercontent.com/dvn1234op/GRID-ANOMALY/main"
+
+@st.cache_data
+def load_data():
+    data = {}
+    try:
+        data['overall'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_overall.csv")
+        data['hourly'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_by_hour.csv", names=['hour', 'model_rmse', 'model_mae', 'model_smape'])
+        data['acorn'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_by_acorn.csv", names=['acorn', 'model_rmse', 'model_mae', 'model_smape'])
+        data['tariff'] = pd.read_csv(f"{repo_url}/results/forecast_metrics_by_tariff.csv", names=['tariff', 'model_rmse', 'model_mae', 'model_smape'])
+        
+        # Fetch reporting output
+        req = urllib.request.urlopen(f"{repo_url}/results/reporting_output.csv")
+        content = req.read().decode('utf-8')
+        
+        acorn_match = re.search(r'acorn_group,avg_consumption,total_consumption\\n((?:.*\\n)+?)(?=0: jdbc|$)', content)
+        if acorn_match:
+            from io import StringIO
+            data['report_acorn'] = pd.read_csv(StringIO("acorn_group,avg_consumption,total_consumption\\n" + acorn_match.group(1).strip()))
+            
+        hour_match = re.search(r'hour_of_day,avg_energy\\n((?:.*\\n)+?)(?=0: jdbc|$)', content)
+        if hour_match:
+            from io import StringIO
+            data['report_hourly'] = pd.read_csv(StringIO("hour_of_day,avg_energy\\n" + hour_match.group(1).strip()))
+            
+        tariff_match = re.search(r'tariff,hour_of_day,avg_energy\\n((?:.*\\n)+?)(?=0: jdbc|$)', content)
+        if tariff_match:
+            from io import StringIO
+            data['report_tariff'] = pd.read_csv(StringIO("tariff,hour_of_day,avg_energy\\n" + tariff_match.group(1).strip()))
+
+    except Exception as e:
+        st.warning(f"Could not load some files. Error: {e}")
+    return data
+
+data = load_data()
+
+tab1, tab2, tab3 = st.tabs(["📊 Forecasting Performance", "🏘️ Consumer Reporting", "🚨 Anomaly Detection"])
+
+with tab1:
+    st.header("Forecasting Metrics")
+    if 'overall' in data:
+        st.subheader("Overall Model Performance vs Baselines")
+        st.dataframe(data['overall'], use_container_width=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if 'hourly' in data:
+            st.subheader("RMSE by Hour of Day")
+            hourly = data['hourly'].sort_values('hour')
+            st.line_chart(hourly.set_index('hour')['model_rmse'])
+    with col2:
+        if 'tariff' in data:
+            st.subheader("RMSE by Tariff (Standard vs ToU)")
+            st.bar_chart(data['tariff'].set_index('tariff')['model_rmse'])
+
+with tab2:
+    st.header("Consumer Group Insights")
+    col1, col2 = st.columns(2)
+    with col1:
+        if 'report_acorn' in data:
+            st.subheader("Avg Consumption by ACORN")
+            st.bar_chart(data['report_acorn'].set_index('acorn_group')['avg_consumption'])
+    with col2:
+        if 'report_hourly' in data:
+            st.subheader("Global Peak-Hour Profile")
+            st.line_chart(data['report_hourly'].set_index('hour_of_day')['avg_energy'])
+
+with tab3:
+    st.header("Anomaly Detection")
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.subheader("Detector Metrics")
+        try:
+            req = urllib.request.urlopen(f"{repo_url}/results/anomaly_metrics.txt")
+            metrics = req.read().decode('utf-8')
+            st.code(metrics, language="text")
+        except:
+            st.warning("Anomaly metrics not found.")
+    with col2:
+        st.subheader("Example Anomalies")
+        st.image(f"{repo_url}/results/detector_A_example.png", caption="Detector A Output", use_container_width=True)
+`
+          }
         },
         document.getElementById("root")
       );
